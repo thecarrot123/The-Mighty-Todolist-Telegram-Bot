@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "the-mighty-todolist-telegram-bot"
+version = "0.1.0"
+description = ""
+authors = ["Murhaf Alawir <94635412+thecarrot123@users.noreply.github.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+python-telegram-bot = "^21.1.1"
+pytest = "^8.1.1"
+bandit = "^1.7.8"
+flake8 = "^7.0.0"
+psycopg2-binary = "^2.9.9"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
