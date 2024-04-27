@@ -37,7 +37,7 @@ def init_db():
             deadline TEXT, 
             completed BOOLEAN DEFAULT 0
         )
-    """
+    """.strip()
     )
 
     conn.commit()
@@ -302,7 +302,7 @@ async def notify_due_tasks():
         for task_id, user_id, description in due_tasks:
             message = f"""
                 Reminder: Task '{description}' is due in 24 hours!
-                """
+                """.strip()
             await bot.send_message(chat_id=user_id, text=message)
             logging.info(f"Notified user {user_id} about task {task_id}")
 
