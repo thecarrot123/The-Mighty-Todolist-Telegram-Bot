@@ -25,3 +25,11 @@
     ```bash
     ln pre-commit .git/hooks/pre-commit
     ```
+
+4) Run:
+
+    Don't forget to run the bot via poetry.
+
+    ```bash
+    poetry run python bot.py
+    ```

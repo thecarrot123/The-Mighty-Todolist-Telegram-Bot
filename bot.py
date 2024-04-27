@@ -19,7 +19,7 @@ logging.basicConfig(
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 DATABASE_URL = 'task.db'
-DAILY_REMINDER_START = "09:00:00"
+DAILY_REMINDER_START = "13:49:00"
 
 # Database setup
 
@@ -323,7 +323,8 @@ def run_notifiers():
     while not shutdown_event.is_set():
         now = datetime.now()
         reminder_start = datetime.strptime(
-            f"{now.date()} {DAILY_REMINDER_START}", "%Y-%m-%d %H:%M:%S"
+            f"{now.date().strftime('%Y-%m-%d')} {DAILY_REMINDER_START}",
+            "%Y-%m-%d %H:%M:%S",
         )
 
         if reminder_start <= now and now > last_reminder + timedelta(
