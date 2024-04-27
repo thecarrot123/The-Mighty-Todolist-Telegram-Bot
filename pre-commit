@@ -1,19 +1,33 @@
 #!/bin/bash
 
-FILES_NAMES=$(ls | grep .py)
+FILES_NAMES=""
 
+add_files() {
+	FILES="$(ls $1 | grep .py)"
+	for FILE_NAME in $FILES
+	do
+		FILES_NAMES+="$1/$FILE_NAME "
+	done
+}
+
+add_files "app"
+add_files "tests"
 
 format_file() {
-	echo "formating <$1> file ...."
-	
+	echo "formating <$1> file...."
+
+	if [[ -z "${errors}" ]]; then
+		return 0
+	fi
+
 	# Run Flake8 and autopep8
 	poetry run flake8 --extend-ignore=E501 $1 | \
-		sed 's/:.*//' | \
+		sed 's/:.*//g' | \
 		xargs poetry run autopep8 --in-place
 
 	# Run Flake8 and black
 	poetry run flake8 --extend-ignore=E501 $1 | \
-			sed 's/:.*//' | \
+			sed 's/:.*//g' | \
 			xargs poetry run black --line-length 79 \
 		--skip-string-normalization --quiet
 
@@ -24,7 +38,7 @@ format_file() {
 	git add $1
 }
 
-for FILE_NAME in "$FILES_NAMES"
+for FILE_NAME in $FILES_NAMES
 do
 	format_file $FILE_NAME
 done
