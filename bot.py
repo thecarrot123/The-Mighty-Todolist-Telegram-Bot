@@ -47,8 +47,24 @@ def init_db():
 # Command handlers
 
 
-async def start(update: Update, context: CallbackContext):
-    await update.message.reply_text("Welcome to your personal To-Do List Bot!")
+async def start_command(update: Update, context: CallbackContext):
+    await update.message.reply_text("Welcome to The Mighty To-Do List Bot!")
+
+
+async def help_command(update: Update, context: CallbackContext):
+    """
+    Sends a message with all the available commands and their descriptions.
+    """
+    help_text = (
+        "Here are the commands you can use with this bot:\n"
+        "/start - Start interacting with the bot.\n"
+        "/add - Add a new task. Usage: /add <description>; <category>; <deadline>\n"
+        "/list - List all your current tasks that are not yet completed.\n"
+        "/delete - Delete a task. Usage: /delete <task_id>\n"
+        "/complete - Mark a task as completed. Usage: /complete <task_id>\n"
+        "/help - Show this help message."
+    )
+    await update.message.reply_text(help_text)
 
 
 async def add_task(update: Update, context: CallbackContext):
@@ -59,7 +75,7 @@ async def add_task(update: Update, context: CallbackContext):
     """
     try:
         args = " ".join(context.args).split(";")
-        if len(args) < 1:
+        if len(args) <= 1:
             await update.message.reply_text(
                 "Usage: /add <description>; <category>; <deadline: YYYY-MM-DD HH:MM>"
             )
@@ -231,16 +247,23 @@ async def list_tasks(update: Update, context: CallbackContext):
         c = conn.cursor()
         c.execute(
             """
-            SELECT description, category, deadline FROM tasks WHERE user_id=?
-            AND completed=FALSE
+            SELECT id, description, category, completed, deadline
+            FROM tasks WHERE user_id=?
+            ORDER BY completed, deadline
             """,
             (user_id,),
         )
         tasks = c.fetchall()
-        message = "\n".join(
-            f"{desc} - {cat} - due by {deadline}"
-            for desc, cat, deadline in tasks
-        )
+        message = None
+        if tasks:
+            message = (
+                "id: description - category - completed - due by deadline\n"
+            )
+            message += "\n".join(
+                f"{id}: {desc} - {cat} - {'True' if comp else 'False'}"
+                + f" - due by {deadline}"
+                for id, desc, cat, comp, deadline in tasks
+            )
         await update.message.reply_text(
             message if message else "No tasks found."
         )
@@ -321,7 +344,8 @@ def main():
         init_db()
         application = Application.builder().token(TOKEN).build()
 
-        application.add_handler(CommandHandler("start", start))
+        application.add_handler(CommandHandler("start", start_command))
+        application.add_handler(CommandHandler("help", help_command))
         application.add_handler(CommandHandler("add", add_task))
         application.add_handler(CommandHandler("list", list_tasks))
         application.add_handler(CommandHandler("delete", delete_task))
