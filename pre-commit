@@ -1,0 +1,34 @@
+#!/bin/bash
+
+FILES_NAMES=$(ls | grep .py)
+
+
+format_file() {
+	echo "formating <$1> file ...."
+	
+	# Run Flake8 and autopep8
+	poetry run flake8 --extend-ignore=E501 $1 | \
+		sed 's/:.*//' | \
+		xargs poetry run autopep8 --in-place
+
+	# Run Flake8 and black
+	poetry run flake8 --extend-ignore=E501 $1 | \
+			sed 's/:.*//' | \
+			xargs poetry run black --line-length 79 \
+		--skip-string-normalization --quiet
+
+	# Run isort
+	poetry run isort $1
+
+	# add changes
+	git add $1
+}
+
+for FILE_NAME in "$FILES_NAMES"
+do
+	format_file $FILE_NAME
+done
+
+# Exit with the status of the last command
+exit $?
+

@@ -542,17 +542,6 @@ pygments = ">=2.13.0,<3.0.0"
 jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
-name = "schedule"
-version = "1.2.1"
-description = "Job scheduling for humans."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "schedule-1.2.1-py2.py3-none-any.whl", hash = "sha256:14cdeb083a596aa1de6dc77639a1b2ac8bf6eaafa82b1c9279d3612823063d01"},
-    {file = "schedule-1.2.1.tar.gz", hash = "sha256:843bc0538b99c93f02b8b50e3e39886c06f2d003b24f48e1aa4cadfa3f341279"},
-]
-
-[[package]]
 name = "sniffio"
 version = "1.3.1"
 description = "Sniff out which async library your code is running under"
@@ -580,4 +569,4 @@ pbr = ">=2.0.0,<2.1.0 || >2.1.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "462e635fcb1be295ce02c4bb694d79205578828d156052701afd26dc5a4f577e"
+content-hash = "47d757270f9c1cb799700446a38689b0d3557ade884bf072bf7fe87b27fef72d"
