@@ -19,7 +19,7 @@ logging.basicConfig(
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 DATABASE_URL = 'task.db'
-DAILY_REMINDER_START = "13:49:00"
+DAILY_REMINDER_START = "09:00:00"
 
 # Database setup
 
@@ -352,7 +352,7 @@ def main():
         application.add_handler(CommandHandler("delete", delete_task))
         application.add_handler(CommandHandler("complete", mark_completed))
 
-        # Start the notifiers in a separate thread or as part of your main bot loop
+        # Start the notifiers in a separate thread
         thread = Thread(target=run_notifiers)
         thread.start()
 
