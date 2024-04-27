@@ -30,11 +30,11 @@ def init_db():
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            user_id INTEGER, 
-            description TEXT, 
-            category TEXT, 
-            deadline TEXT, 
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            description TEXT,
+            category TEXT,
+            deadline TEXT,
             completed BOOLEAN DEFAULT 0
         )
     """.strip()
@@ -58,7 +58,8 @@ async def help_command(update: Update, context: CallbackContext):
     help_text = (
         "Here are the commands you can use with this bot:\n"
         "/start - Start interacting with the bot.\n"
-        "/add - Add a new task. Usage: /add <description>; <category>; <deadline>\n"
+        """/add - Add a new task.
+        Usage: /add <description>; <category>; <deadline>\n"""
         "/list - List all your current tasks that are not yet completed.\n"
         "/delete - Delete a task. Usage: /delete <task_id>\n"
         "/complete - Mark a task as completed. Usage: /complete <task_id>\n"
@@ -70,14 +71,17 @@ async def help_command(update: Update, context: CallbackContext):
 async def add_task(update: Update, context: CallbackContext):
     """
     Adds a new task to the database.
-    Command format: /add <description>; <category>; <deadline: YYYY-MM-DD HH:MM>
+    Command format:
+    /add <description>; <category>; <deadline: YYYY-MM-DD HH:MM>
     Example: /add Prepare presentation; work; 2023-10-15
     """
     try:
         args = " ".join(context.args).split(";")
         if len(args) <= 1:
             await update.message.reply_text(
-                "Usage: /add <description>; <category>; <deadline: YYYY-MM-DD HH:MM>"
+                """Usage:
+                /add <description>; <category>; <deadline: YYYY-MM-DD HH:MM>
+                """
             )
             return
 
@@ -283,7 +287,7 @@ async def list_tasks(update: Update, context: CallbackContext):
 bot = Bot(token=TOKEN)
 
 
-async def notify_due_tasks(bot = bot):
+async def notify_due_tasks(bot=bot):
     """Check for tasks that are due and notify the respective users."""
     try:
         conn = sqlite3.connect(DATABASE_URL)

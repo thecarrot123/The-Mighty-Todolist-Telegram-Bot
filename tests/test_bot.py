@@ -52,7 +52,8 @@ async def test_help_command():
     expected_help_text = (
         "Here are the commands you can use with this bot:\n"
         "/start - Start interacting with the bot.\n"
-        "/add - Add a new task. Usage: /add <description>; <category>; <deadline>\n"
+        """/add - Add a new task.
+        Usage: /add <description>; <category>; <deadline>\n"""
         "/list - List all your current tasks that are not yet completed.\n"
         "/delete - Delete a task. Usage: /delete <task_id>\n"
         "/complete - Mark a task as completed. Usage: /complete <task_id>\n"
@@ -68,11 +69,11 @@ def test_init_db():
         init_db()  # Assuming the import from the bot script
         expected_sql = """   
         CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            user_id INTEGER, 
-            description TEXT, 
-            category TEXT, 
-            deadline TEXT, 
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            description TEXT,
+            category TEXT,
+            deadline TEXT,
             completed BOOLEAN DEFAULT 0
         )
     """.strip()
