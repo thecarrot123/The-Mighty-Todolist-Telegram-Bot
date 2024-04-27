@@ -283,7 +283,7 @@ async def list_tasks(update: Update, context: CallbackContext):
 bot = Bot(token=TOKEN)
 
 
-async def notify_due_tasks():
+async def notify_due_tasks(bot = bot):
     """Check for tasks that are due and notify the respective users."""
     try:
         conn = sqlite3.connect(DATABASE_URL)

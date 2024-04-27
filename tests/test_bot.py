@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock, AsyncMock, call
 from app.bot import (
     start_command,
     help_command,
@@ -281,3 +281,36 @@ async def test_delete_task_db_error():
         update.message.reply_text.assert_awaited_once_with(
             "Failed to delete task due to a database error."
         )
+
+
+@pytest.mark.asyncio
+@patch('sqlite3.connect')
+async def test_notify_due_tasks_success(mock_connect):
+    bot = Mock()
+    bot.send_message = AsyncMock()
+    mock_cursor = Mock()
+    mock_connect.return_value.cursor.return_value = mock_cursor
+    mock_cursor.fetchall.return_value = [
+        (1, 12345, 'Task 1'),  # Assume user_id should be an integer
+        (2, 67890, 'Task 2')   # Same here, use integer for user_id
+    ]
+
+    await notify_due_tasks(bot)
+
+    assert bot.send_message.call_count == 2
+    bot.send_message.assert_has_calls([
+        call(chat_id=12345, text="Reminder: Task 'Task 1' is due in 24 hours!"),
+        call(chat_id=67890, text="Reminder: Task 'Task 2' is due in 24 hours!")
+    ], any_order=True)
+
+@pytest.mark.asyncio
+@patch('sqlite3.connect')
+async def test_notify_due_tasks_db_error(mock_connect):
+    mock_connect.side_effect = sqlite3.Error("Database connection failed")
+    bot = Mock()
+    bot.send_message = AsyncMock()
+    with patch('logging.error') as mock_log_error:
+        await notify_due_tasks(bot)
+        mock_log_error.assert_called_with("Database error during notification: Database connection failed")
+
+    assert bot.send_message.call_count == 0
