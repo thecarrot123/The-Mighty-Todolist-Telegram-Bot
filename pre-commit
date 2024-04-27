@@ -16,6 +16,8 @@ add_files "tests"
 format_file() {
 	echo "formating <$1> file...."
 
+	errors=$(poetry run flake8 --extend-ignore=E501 $1 | sed 's/:.*//g')
+
 	if [[ -z "${errors}" ]]; then
 		return 0
 	fi
