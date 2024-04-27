@@ -16,6 +16,7 @@ autopep8 = "^2.1.0"
 black = "^24.4.2"
 isort = "^5.13.2"
 python-dotenv = "^1.0.1"
+pytest-asyncio = "^0.23.6"
 
 
 [build-system]

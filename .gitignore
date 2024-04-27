@@ -1,2 +1,5 @@
 .env
 task.db
+__pycache__/
+.pytest_cache/
+.venv/
