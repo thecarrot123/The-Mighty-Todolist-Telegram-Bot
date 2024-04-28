@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 from threading import Event, Thread
 
 from dotenv import load_dotenv
@@ -68,6 +68,18 @@ async def help_command(update: Update, context: CallbackContext):
     await update.message.reply_text(help_text)
 
 
+async def alarm(context: CallbackContext):
+    """Check for tasks that are due and alarm the respective users."""
+    try:
+        job = context.job
+        await context.bot.send_message(job.chat_id, text=job.data['message'])
+        logging.info(
+            f"Notified user {job.user_id} about task {job.data['task_id']}"
+        )
+    except Exception as e:
+        logging.error(f"Unexpected error during alarm: {e}")
+
+
 async def add_task(update: Update, context: CallbackContext):
     """
     Adds a new task to the database.
@@ -87,17 +99,23 @@ async def add_task(update: Update, context: CallbackContext):
 
         description = args[0].strip()
         category = args[1].strip()
-        deadline = args[2].strip()
+        deadline_str = args[2].strip()
 
         try:
-            deadline = datetime.strptime(deadline, '%Y-%m-%d %H:%M').isoformat(
-                ' '
-            )
+            deadline = datetime.strptime(deadline_str, '%Y-%m-%d %H:%M')
         except ValueError:
             await update.message.reply_text(
                 "Invalid date format. Use YYYY-MM-DD HH:MM."
             )
             return
+
+        now = datetime.now()
+        if deadline <= now:
+            await update.message.reply_text(
+                "The deadline must be in the future."
+            )
+            return
+        due = (deadline - now).total_seconds()
 
         user_id = update.effective_user.id
 
@@ -108,10 +126,23 @@ async def add_task(update: Update, context: CallbackContext):
         INSERT INTO tasks (user_id, description, category, deadline, completed)
         VALUES (?, ?, ?, ?, 0)
         """,
-            (user_id, description, category, deadline),
+            (user_id, description, category, deadline_str),
         )
+        task_id = cursor.lastrowid
         conn.commit()
         conn.close()
+
+        context.job_queue.run_once(
+            alarm,
+            due,
+            chat_id=update.effective_chat.id,
+            user_id=user_id,
+            data={
+                'message': f"Reminder: Your task '{description}' is due now!",
+                'task_id': str(task_id),
+            },
+            name=str(task_id),
+        )
 
         await update.message.reply_text("Task added successfully!")
     except sqlite3.Error as e:
@@ -166,6 +197,17 @@ async def delete_task(update: Update, context: CallbackContext):
         )
         conn.commit()
         conn.close()
+
+        # Remove alarm job from job queue
+        current_jobs = context.job_queue.get_jobs_by_name(str(task_id))
+
+        if not current_jobs:
+            logging.warning(
+                f"Failed to find and remove job {str(task_id)} in job queue"
+            )
+        for job in current_jobs:
+            job.schedule_removal()
+            logging.info(f"Removed job {str(task_id)} from job queue")
 
         await update.message.reply_text("Task deleted successfully!")
     except sqlite3.Error as e:
@@ -285,7 +327,10 @@ async def list_tasks(update: Update, context: CallbackContext):
 
 
 async def notify_due_tasks(bot):
-    """Check for tasks that are due and notify the respective users."""
+    """
+    Check for tasks that will are due within the next 24
+    hours and notify the respective users.
+    """
     try:
         conn = sqlite3.connect(DATABASE_URL)
         cursor = conn.cursor()

@@ -15,7 +15,7 @@
     Create `.env` file in project working directory. The env file will provide the needed environment variables to python files.
 
     ```bash
-    echo "TELEGRAM_TOKEN=THE_REAL_TOKEN" > .env
+    echo "TELEGRAM_TOKEN=THE_REAL_TOKEN\nDATABASE_URL="task.db"" > .env
     ```
 
 3) Link Pre-Commit Hook:
@@ -31,5 +31,5 @@
     Don't forget to run the bot via poetry.
 
     ```bash
-    poetry run python bot.py
+    poetry run python app/bot.py
     ```
