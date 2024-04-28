@@ -2,12 +2,15 @@ import os
 import re
 import sqlite3
 from datetime import datetime, timedelta
-from unittest.mock import ANY, AsyncMock, Mock, call, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
 
 import pytest
 from dotenv import load_dotenv
 
-from app.bot import *
+from app.bot import (DAILY_REMINDER_START, DATABASE_URL, TOKEN, add_task,
+                     delete_task, help_command, init_db, list_tasks, main,
+                     mark_completed, notify_due_tasks, run_notifiers,
+                     start_command)
 
 # Mocking the Update object for Telegram
 
@@ -15,11 +18,13 @@ load_dotenv()
 
 
 class MockUpdate:
-    def __init__(self, message_text, user_id):
-        self.message = Mock()
+    def __init__(self, message_text, user_id, chat_id=1):
+        self.message = MagicMock()
         self.message.text = message_text
-        self.effective_user = Mock()
+        self.effective_user = MagicMock()
         self.effective_user.id = user_id
+        self.effective_chat = MagicMock()
+        self.effective_chat.id = chat_id
         self.message.reply_text = AsyncMock()
 
 
@@ -44,7 +49,7 @@ def test_daily_reminder_start():
 async def test_start_command():
     # Create a mock Update object with specific attributes
     update = MockUpdate("/start", user_id=12345)
-    context = Mock()  # Similarly mock the CallbackContext if needed
+    context = MagicMock()  # Similarly mock the CallbackContext if needed
 
     # Correct usage without asyncio.run
     await start_command(update, context)
@@ -58,7 +63,7 @@ async def test_start_command():
 @pytest.mark.asyncio
 async def test_help_command():
     update = MockUpdate("/help", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     await help_command(update, context)
 
     expected_help_text = (
@@ -76,7 +81,7 @@ async def test_help_command():
 
 def test_init_db():
     with patch("sqlite3.connect") as mock_connect:
-        mock_cursor = Mock()
+        mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
         init_db()  # Assuming the import from the bot script
         expected_sql = """
@@ -96,13 +101,19 @@ def test_init_db():
 
 @pytest.mark.asyncio
 async def test_add_task_valid_input():
+    future = datetime.now() + timedelta(minutes=10)
+    future = future.strftime("%Y-%m-%d %H:%M")
+
     update = MockUpdate("/add", user_id=12345)
-    context = Mock()
-    context.args = ["Prepare presentation; work; 2023-10-15 22:20"]
+    context = MagicMock()
+    context.args = [f"Prepare presentation; work; {future}"]
+
     with patch("sqlite3.connect") as mock_connect:
-        mock_cursor = Mock()
+        mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
+
         await add_task(update, context)
+
         mock_cursor.execute.assert_called()
         update.message.reply_text.assert_called_with(
             "Task added successfully!"
@@ -112,12 +123,15 @@ async def test_add_task_valid_input():
 @pytest.mark.asyncio
 async def test_add_task_invalid_input1():
     update = MockUpdate("/add", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = [""]
+
     with patch("sqlite3.connect") as mock_connect:
-        mock_cursor = Mock()
+        mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
+
         await add_task(update, context)
+
         mock_cursor.execute.assert_not_called()
         update.message.reply_text.assert_called_with(
             """Usage:
@@ -129,12 +143,14 @@ async def test_add_task_invalid_input1():
 @pytest.mark.asyncio
 async def test_add_task_invalid_input2():
     update = MockUpdate("/add", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["Prepare presentation"]
     with patch("sqlite3.connect") as mock_connect:
-        mock_cursor = Mock()
+        mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
+
         await add_task(update, context)
+
         mock_cursor.execute.assert_not_called()
         update.message.reply_text.assert_called_with(
             """Usage:
@@ -146,12 +162,15 @@ async def test_add_task_invalid_input2():
 @pytest.mark.asyncio
 async def test_add_task_invalid_input3():
     update = MockUpdate("/add", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["Prepare presentation; work"]
+
     with patch("sqlite3.connect") as mock_connect:
-        mock_cursor = Mock()
+        mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
+
         await add_task(update, context)
+
         mock_cursor.execute.assert_not_called()
         update.message.reply_text.assert_called_with(
             """Usage:
@@ -163,12 +182,15 @@ async def test_add_task_invalid_input3():
 @pytest.mark.asyncio
 async def test_add_task_invalid_input4():
     update = MockUpdate("/add", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["Prepare presentation; work; 25:50:21"]
+
     with patch("sqlite3.connect") as mock_connect:
-        mock_cursor = Mock()
+        mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
+
         await add_task(update, context)
+
         mock_cursor.execute.assert_not_called()
         update.message.reply_text.assert_called_with(
             "Invalid date format. Use YYYY-MM-DD HH:MM."
@@ -176,21 +198,42 @@ async def test_add_task_invalid_input4():
 
 
 @pytest.mark.asyncio
-async def test_add_task_with_db_error():
+async def test_add_task_invalid_input5():
     update = MockUpdate("/add", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["Prepare presentation; work; 2023-10-15 22:20"]
+
+    with patch("sqlite3.connect") as mock_connect:
+        mock_cursor = MagicMock()
+        mock_connect.return_value.cursor.return_value = mock_cursor
+
+        await add_task(update, context)
+
+        mock_cursor.execute.assert_not_called()
+        update.message.reply_text.assert_called_with(
+            "The deadline must be in the future."
+        )
+
+
+@pytest.mark.asyncio
+async def test_add_task_with_db_error():
+    future = datetime.now() + timedelta(minutes=10)
+    future = future.strftime("%Y-%m-%d %H:%M")
+
+    update = MockUpdate("/add", user_id=12345)
+    context = MagicMock()
+    context.args = [f"Prepare presentation; work; {future}"]
 
     with patch('logging.error') as mocked_logging, patch(
         'sqlite3.connect'
     ) as mocked_connect:
-        mocked_conn = Mock()
-        mocked_cursor = Mock()
-        mocked_connect.return_value = mocked_conn
-        mocked_conn.cursor.return_value = mocked_cursor
+        mocked_cursor = MagicMock()
         mocked_cursor.execute.side_effect = sqlite3.Error(
             "Forced database error"
         )
+        mocked_conn = MagicMock()
+        mocked_conn.cursor.return_value = mocked_cursor
+        mocked_connect.return_value = mocked_conn
 
         await add_task(update, context)
 
@@ -204,9 +247,14 @@ async def test_add_task_with_db_error():
 
 @pytest.mark.asyncio
 async def test_add_tasks_unexpected_error():
+    future = datetime.now() + timedelta(minutes=10)
+    future = future.strftime("%Y-%m-%d %H:%M")
+
     update = MockUpdate("/add", user_id=12345)
-    context = Mock()
-    context.args = ["Prepare presentation; work; 2023-10-15 22:20"]
+    context = MagicMock()
+    context.args = [f"Prepare presentation; work; {future}"]
+    context.job_queue = MagicMock()
+    context.job_queue.run_once = MagicMock()
 
     with patch('logging.error') as mocked_logging, patch(
         'sqlite3.connect'
@@ -224,12 +272,11 @@ async def test_add_tasks_unexpected_error():
 
 @pytest.mark.asyncio
 async def test_notify_due_tasks():
-    bot = Mock()
+    bot = MagicMock()
     bot.send_message = AsyncMock()
-    with patch("sqlite3.connect") as mock_connect, patch(
-        "app.bot.Bot.send_message"
-    ) as mock_send_message:
-        mock_cursor = Mock()
+    with patch("sqlite3.connect") as mock_connect, \
+            patch("app.bot.Bot.send_message"):
+        mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
         mock_cursor.fetchall.return_value = [(1, 12345, "Prepare meeting")]
         await notify_due_tasks(bot)
@@ -243,7 +290,7 @@ async def test_notify_due_tasks():
 async def test_list_tasks_with_no_tasks():
     user_id = 12345
     update = MockUpdate("/list", user_id)
-    context = Mock()
+    context = MagicMock()
 
     with patch('sqlite3.connect') as mock_connect:
         mock_connection = mock_connect.return_value
@@ -259,13 +306,13 @@ async def test_list_tasks_with_no_tasks():
 @pytest.mark.asyncio
 async def test_list_tasks_with_db_error():
     update = MockUpdate("/list", user_id=12345)
-    context = Mock()
+    context = MagicMock()
 
     with patch('logging.error') as mocked_logging, patch(
         'sqlite3.connect'
     ) as mocked_connect:
-        mocked_conn = Mock()
-        mocked_cursor = Mock()
+        mocked_conn = MagicMock()
+        mocked_cursor = MagicMock()
         mocked_connect.return_value = mocked_conn
         mocked_conn.cursor.return_value = mocked_cursor
         mocked_cursor.execute.side_effect = sqlite3.Error(
@@ -285,7 +332,7 @@ async def test_list_tasks_with_db_error():
 @pytest.mark.asyncio
 async def test_list_tasks_unexpected_error():
     update = MockUpdate("/list", user_id=12345)
-    context = Mock()
+    context = MagicMock()
 
     with patch('logging.error') as mocked_logging, patch(
         'sqlite3.connect'
@@ -305,7 +352,7 @@ async def test_list_tasks_unexpected_error():
 async def test_list_tasks_with_multiple_tasks():
     user_id = 12345
     update = MockUpdate("/list", user_id)
-    context = Mock()
+    context = MagicMock()
 
     with patch('sqlite3.connect') as mock_connect:
         mock_connection = mock_connect.return_value
@@ -329,7 +376,7 @@ async def test_list_tasks_with_multiple_tasks():
 @pytest.mark.asyncio
 async def test_mark_completed_success():
     update = MockUpdate("/complete", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["42"]
 
     with patch('sqlite3.connect') as mock_connect:
@@ -352,14 +399,14 @@ async def test_mark_completed_success():
 @pytest.mark.asyncio
 async def test_mark_completed_tasks_with_db_error():
     update = MockUpdate("/complete", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["42"]
 
     with patch('logging.error') as mocked_logging, patch(
         'sqlite3.connect'
     ) as mocked_connect:
-        mocked_conn = Mock()
-        mocked_cursor = Mock()
+        mocked_conn = MagicMock()
+        mocked_cursor = MagicMock()
         mocked_connect.return_value = mocked_conn
         mocked_conn.cursor.return_value = mocked_cursor
         mocked_cursor.execute.side_effect = sqlite3.Error(
@@ -379,7 +426,7 @@ async def test_mark_completed_tasks_with_db_error():
 @pytest.mark.asyncio
 async def test_mark_completed_tasks_unexpected_error():
     update = MockUpdate("/complete", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["42"]
 
     with patch('logging.error') as mocked_logging, patch(
@@ -399,7 +446,7 @@ async def test_mark_completed_tasks_unexpected_error():
 @pytest.mark.asyncio
 async def test_mark_completed_not_found():
     update = MockUpdate("/complete", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["100"]
 
     with patch('sqlite3.connect') as mock_connect:
@@ -418,7 +465,7 @@ async def test_mark_completed_not_found():
 @pytest.mark.asyncio
 async def test_mark_completed_db_error():
     update = MockUpdate("/complete", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["42"]
 
     with patch('sqlite3.connect') as mock_connect:
@@ -434,7 +481,7 @@ async def test_mark_completed_db_error():
 @pytest.mark.asyncio
 async def test_delete_task_success():
     update = MockUpdate("/delete", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["3"]
 
     with patch('sqlite3.connect') as mock_connect:
@@ -455,7 +502,7 @@ async def test_delete_task_success():
 @pytest.mark.asyncio
 async def test_delete_task_not_found():
     update = MockUpdate("/delete", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["99"]
 
     with patch('sqlite3.connect') as mock_connect:
@@ -473,14 +520,14 @@ async def test_delete_task_not_found():
 @pytest.mark.asyncio
 async def test_delete_tasks_with_db_error():
     update = MockUpdate("/delete", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["4"]
 
     with patch('logging.error') as mocked_logging, patch(
         'sqlite3.connect'
     ) as mocked_connect:
-        mocked_conn = Mock()
-        mocked_cursor = Mock()
+        mocked_conn = MagicMock()
+        mocked_cursor = MagicMock()
         mocked_connect.return_value = mocked_conn
         mocked_conn.cursor.return_value = mocked_cursor
         mocked_cursor.execute.side_effect = sqlite3.Error(
@@ -500,7 +547,7 @@ async def test_delete_tasks_with_db_error():
 @pytest.mark.asyncio
 async def test_delete_tasks_unexpected_error():
     update = MockUpdate("/delete", user_id=12345)
-    context = Mock()
+    context = MagicMock()
     context.args = ["4"]
 
     with patch('logging.error') as mocked_logging, patch(
@@ -520,9 +567,9 @@ async def test_delete_tasks_unexpected_error():
 @pytest.mark.asyncio
 @patch('sqlite3.connect')
 async def test_notify_due_tasks_success(mock_connect):
-    bot = Mock()
+    bot = MagicMock()
     bot.send_message = AsyncMock()
-    mock_cursor = Mock()
+    mock_cursor = MagicMock()
     mock_connect.return_value.cursor.return_value = mock_cursor
     mock_cursor.fetchall.return_value = [
         (1, 12345, 'Task 1'),  # Assume user_id should be an integer
@@ -548,30 +595,15 @@ async def test_notify_due_tasks_success(mock_connect):
 
 
 @pytest.mark.asyncio
-@patch('sqlite3.connect')
-async def test_notify_due_tasks_db_error(mock_connect):
-    mock_connect.side_effect = sqlite3.Error("Database connection failed")
-    bot = Mock()
-    bot.send_message = AsyncMock()
-    with patch('logging.error') as mock_log_error:
-        await notify_due_tasks(bot)
-        mock_log_error.assert_called_with(
-            "Database error during notification: Database connection failed"
-        )
-
-    assert bot.send_message.call_count == 0
-
-
-@pytest.mark.asyncio
 async def test_notify_due_tasks_db_error():
-    bot = Mock()
+    bot = MagicMock()
     bot.send_message = AsyncMock()
 
     with patch('logging.error') as mocked_logging, patch(
         'sqlite3.connect'
     ) as mocked_connect:
-        mocked_conn = Mock()
-        mocked_cursor = Mock()
+        mocked_conn = MagicMock()
+        mocked_cursor = MagicMock()
         mocked_connect.return_value = mocked_conn
         mocked_conn.cursor.return_value = mocked_cursor
         mocked_cursor.execute.side_effect = sqlite3.Error(
@@ -587,7 +619,7 @@ async def test_notify_due_tasks_db_error():
 
 @pytest.mark.asyncio
 async def test_notify_due_tasks_unexpected_error():
-    bot = Mock()
+    bot = MagicMock()
     bot.send_message = AsyncMock()
 
     with patch('logging.error') as mocked_logging, patch(
@@ -607,13 +639,12 @@ async def test_notify_due_tasks_unexpected_error():
 async def test_notification_triggered():
     now = datetime.now().strftime("%H:%M:%S")
 
-    with patch('app.bot.DAILY_REMINDER_START', now), patch(
-        'app.bot.Bot'
-    ) as mock_bot, patch('app.bot.asyncio.run') as mock_async_run, patch(
-        'app.bot.shutdown_event.is_set', side_effect=[False, False, True]
-    ), patch(
-        'app.bot.shutdown_event.wait'
-    ):
+    with patch('app.bot.DAILY_REMINDER_START', now), \
+        patch('app.bot.Bot'), \
+        patch('app.bot.asyncio.run') as mock_async_run, \
+        patch('app.bot.shutdown_event.wait'), \
+        patch('app.bot.shutdown_event.is_set',
+              side_effect=[False, False, True]):
 
         run_notifiers()
 
@@ -640,7 +671,7 @@ def test_main_command_handler():
         'app.bot.run_notifiers'
     ):
 
-        mock_application = Mock()
+        mock_application = MagicMock()
         mock_builder.return_value.token.return_value.build.return_value = (
             mock_application
         )
@@ -659,9 +690,7 @@ def test_main_command_handler():
 
         # Check that all handlers are added with correct callbacks
         actual_calls = [c[0] for c in mock_command_handler.call_args_list]
-        assert (
-            actual_calls == expected_handlers
-        ), f"Actual calls: {actual_calls} do not match expected calls: {expected_handlers}"
+        assert (actual_calls == expected_handlers)
 
 
 def test_main_threading():
