@@ -18,7 +18,7 @@ logging.basicConfig(
 )
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
-DATABASE_URL = 'task.db'
+DATABASE_URL = os.getenv("DATABASE_URL")
 DAILY_REMINDER_START = "09:00:00"
 
 # Database setup
@@ -58,8 +58,8 @@ async def help_command(update: Update, context: CallbackContext):
     help_text = (
         "Here are the commands you can use with this bot:\n"
         "/start - Start interacting with the bot.\n"
-        """/add - Add a new task.
-        Usage: /add <description>; <category>; <deadline>\n"""
+        """/add - Add a new task. """
+        """Usage: /add <description>; <category>; <deadline>\n"""
         "/list - List all your current tasks that are not yet completed.\n"
         "/delete - Delete a task. Usage: /delete <task_id>\n"
         "/complete - Mark a task as completed. Usage: /complete <task_id>\n"
@@ -77,7 +77,7 @@ async def add_task(update: Update, context: CallbackContext):
     """
     try:
         args = " ".join(context.args).split(";")
-        if len(args) <= 1:
+        if len(args) != 3:
             await update.message.reply_text(
                 """Usage:
                 /add <description>; <category>; <deadline: YYYY-MM-DD HH:MM>
@@ -86,8 +86,8 @@ async def add_task(update: Update, context: CallbackContext):
             return
 
         description = args[0].strip()
-        category = args[1].strip() if len(args) > 1 else "general"
-        deadline = args[2].strip() if len(args) > 2 else None
+        category = args[1].strip()
+        deadline = args[2].strip()
 
         try:
             deadline = datetime.strptime(deadline, '%Y-%m-%d %H:%M').isoformat(
@@ -275,19 +275,16 @@ async def list_tasks(update: Update, context: CallbackContext):
     except sqlite3.Error as e:
         logging.error(f"Database error: {e}")
         await update.message.reply_text(
-            "Failed to add task due to a database error."
+            "Failed to list task due to a database error."
         )
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
         await update.message.reply_text(
-            "Failed to add task due to an unexpected error."
+            "Failed to list task due to an unexpected error."
         )
 
 
-bot = Bot(token=TOKEN)
-
-
-async def notify_due_tasks(bot=bot):
+async def notify_due_tasks(bot):
     """Check for tasks that are due and notify the respective users."""
     try:
         conn = sqlite3.connect(DATABASE_URL)
@@ -322,7 +319,8 @@ shutdown_event = Event()
 
 def run_notifiers():
     """Run the scheduler loop to check for due tasks."""
-    last_reminder = datetime.now() + timedelta(minutes=-10)
+    bot = Bot(token=TOKEN)
+    reminded_today = False
 
     while not shutdown_event.is_set():
         now = datetime.now()
@@ -331,13 +329,13 @@ def run_notifiers():
             "%Y-%m-%d %H:%M:%S",
         )
 
-        if reminder_start <= now and now > last_reminder + timedelta(
-            minutes=10
-        ):
-            last_reminder = datetime.now()
-            asyncio.run(notify_due_tasks())
+        if reminder_start <= now and not reminded_today:
+            reminded_today = True
+            asyncio.run(notify_due_tasks(bot))
+        elif reminder_start > now:
+            reminded_today = False
 
-        shutdown_event.wait(timeout=10)
+        shutdown_event.wait(timeout=60)
 
 
 # Main function
@@ -372,5 +370,5 @@ def main():
         logging.error(f"Unexpected error in main: {e}")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no mutate
     main()
