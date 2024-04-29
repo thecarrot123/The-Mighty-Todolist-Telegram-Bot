@@ -18,7 +18,8 @@ def test_main_db_init():
     """
     with patch('app.bot.init_db') as mock_init_db, patch(
         'app.bot.Application.builder'
-    ), patch('app.bot.run_notifiers'):
+    ), patch('app.bot.run_notifiers'), \
+            patch('app.bot.Thread'):
 
         main()
 
@@ -38,7 +39,7 @@ def test_main_command_handler():
         'app.bot.CommandHandler'
     ) as mock_command_handler, patch(
         'app.bot.run_notifiers'
-    ):
+    ), patch('app.bot.Thread'):
 
         mock_application = MagicMock()
         mock_builder.return_value.token.return_value.build.return_value = (
