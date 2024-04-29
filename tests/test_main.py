@@ -2,8 +2,15 @@ from unittest.mock import MagicMock, patch
 
 from dotenv import load_dotenv
 
-from app.bot import (add_task, delete_task, help_command, list_tasks, main,
-                     mark_completed, start_command)
+from app.bot import (
+    add_task,
+    delete_task,
+    help_command,
+    list_tasks,
+    main,
+    mark_completed,
+    start_command,
+)
 
 # Mocking the Update object for Telegram
 
@@ -16,10 +23,11 @@ def test_main_db_init():
     the init_db function upon startup. Ensures that database initialization is
     a part of the app's startup routine.
     """
-    with patch('app.bot.init_db') as mock_init_db, patch(
-        'app.bot.Application.builder'
-    ), patch('app.bot.run_notifiers'), \
-            patch('app.bot.Thread'):
+    with patch("app.bot.init_db") as mock_init_db, patch(
+        "app.bot.Application.builder"
+    ), patch("app.bot.run_notifiers"), patch("app.bot.Thread"), patch(
+        "app.bot.sync_with_google_sheets"
+    ):
 
         main()
 
@@ -33,13 +41,15 @@ def test_main_command_handler():
     application. Verifies each command has the proper callback linked to the
     correct functionality.
     """
-    with patch('app.bot.init_db'), patch(
-        'app.bot.Application.builder'
-    ) as mock_builder, patch(
-        'app.bot.CommandHandler'
-    ) as mock_command_handler, patch(
-        'app.bot.run_notifiers'
-    ), patch('app.bot.Thread'):
+    with patch("app.bot.init_db"), patch(
+        "app.bot.Application.builder"
+    ) as mock_builder, patch("app.bot.CommandHandler") as mock_command_handler, patch(
+        "app.bot.run_notifiers"
+    ), patch(
+        "app.bot.Thread"
+    ), patch(
+        "app.bot.sync_with_google_sheets"
+    ):
 
         mock_application = MagicMock()
         mock_builder.return_value.token.return_value.build.return_value = (
@@ -69,14 +79,12 @@ def test_main_threading():
     thread for running notifiers is correctly initiated. Ensures the thread
     starts as expected, which is crucial for background tasks.
     """
-    with patch('app.bot.init_db'), patch('app.bot.Application.builder'), patch(
-        'app.bot.run_notifiers'
-    ), patch('app.bot.Thread') as mock_thread:
+    with patch("app.bot.init_db"), patch("app.bot.Application.builder"), patch(
+        "app.bot.run_notifiers"
+    ), patch("app.bot.Thread") as mock_thread, patch("app.bot.sync_with_google_sheets"):
 
         main()
 
         # Ensure the thread for running notifiers is started
         mock_thread.assert_called()
-        assert (
-            mock_thread.return_value.start.called
-        ), "Notifier thread should start"
+        assert mock_thread.return_value.start.called, "Notifier thread should start"
