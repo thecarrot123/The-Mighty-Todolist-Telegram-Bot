@@ -15,6 +15,9 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Check code correctness
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: poetry run pytest tests --cov=app --cov-branch --cov-report=term --cov-fail-under=80
       - name: Check code style
         run: poetry run flake8 app tests --max-complexity 8
