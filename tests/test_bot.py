@@ -640,7 +640,7 @@ def test_notification_triggered():
 
     with patch('app.bot.DAILY_REMINDER_START', now), \
         patch('app.bot.Bot'), \
-        patch('app.bot.asyncio.run', new_callable=MagicMock) as mock_async_run, \
+        patch('app.bot.asyncio.run', new_callable=MagicMock) as mock_run, \
         patch('app.bot.shutdown_event.wait'), \
         patch('app.bot.notify_due_tasks', new_callable=MagicMock), \
         patch('app.bot.shutdown_event.is_set',
@@ -648,7 +648,7 @@ def test_notification_triggered():
 
         run_notifiers()
 
-        mock_async_run.assert_called_once()
+        mock_run.assert_called_once()
 
 
 def test_main_db_init():
