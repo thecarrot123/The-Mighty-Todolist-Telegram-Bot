@@ -635,14 +635,14 @@ async def test_notify_due_tasks_unexpected_error():
         )
 
 
-@pytest.mark.asyncio
-async def test_notification_triggered():
+def test_notification_triggered():
     now = datetime.now().strftime("%H:%M:%S")
 
     with patch('app.bot.DAILY_REMINDER_START', now), \
         patch('app.bot.Bot'), \
-        patch('app.bot.asyncio.run') as mock_async_run, \
+        patch('app.bot.asyncio.run', new_callable=MagicMock) as mock_async_run, \
         patch('app.bot.shutdown_event.wait'), \
+        patch('app.bot.notify_due_tasks', new_callable=MagicMock), \
         patch('app.bot.shutdown_event.is_set',
               side_effect=[False, False, True]):
 
