@@ -1,0 +1,22 @@
+name: todo list
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install poetry
+        run: sudo -H pip3 install poetry
+      - name: Install dependencies
+        run: poetry install
+      - name: Check code correctness
+        run: poetry run pytest tests --cov=app --cov-branch --cov-report=term --cov-fail-under=80
+      - name: Check code style
+        run: poetry run flake8 app tests --max-complexity 8
+      - name: Check security issues
+        run: poetry run bandit -r app/
