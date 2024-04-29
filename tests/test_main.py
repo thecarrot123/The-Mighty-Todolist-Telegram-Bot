@@ -1,6 +1,5 @@
 from unittest.mock import ANY, MagicMock, patch
 
-import pytest
 from dotenv import load_dotenv
 
 from app.bot import (add_task, delete_task, help_command, list_tasks, main,
@@ -12,6 +11,11 @@ load_dotenv()
 
 
 def test_main_db_init():
+    """
+    Tests that the main function correctly initializes the database by calling
+    the init_db function upon startup. Ensures that database initialization is
+    a part of the app's startup routine.
+    """
     with patch('app.bot.init_db') as mock_init_db, patch(
         'app.bot.Application.builder'
     ), patch('app.bot.run_notifiers'):
@@ -23,6 +27,11 @@ def test_main_db_init():
 
 
 def test_main_command_handler():
+    """
+    Tests that the main function correctly sets up all command handlers in the
+    application. Verifies each command has the proper callback linked to the
+    correct functionality.
+    """
     with patch('app.bot.init_db'), patch(
         'app.bot.Application.builder'
     ) as mock_builder, patch(
@@ -54,6 +63,11 @@ def test_main_command_handler():
 
 
 def test_main_threading():
+    """
+    Tests the main function's threading setup, specifically verifying that a
+    thread for running notifiers is correctly initiated. Ensures the thread
+    starts as expected, which is crucial for background tasks.
+    """
     with patch('app.bot.init_db'), patch('app.bot.Application.builder'), patch(
         'app.bot.run_notifiers'
     ), patch('app.bot.Thread') as mock_thread:

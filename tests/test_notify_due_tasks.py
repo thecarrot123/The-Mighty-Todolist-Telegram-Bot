@@ -13,6 +13,11 @@ load_dotenv()
 
 
 class MockUpdate:
+    """
+    Mocks Telegram's Update object for testing. Simulates the structure and
+    behavior of the Telegram Bot API's Update object, including user and chat
+    identification and reply methods.
+    """
     def __init__(self, message_text, user_id, chat_id=1):
         self.message = MagicMock()
         self.message.text = message_text
@@ -25,6 +30,11 @@ class MockUpdate:
 
 @pytest.mark.asyncio
 async def test_notify_due_tasks():
+    """
+    Tests the notification of due tasks, ensuring the bot sends a reminder for
+    tasks due within 24 hours.
+    Verifies correct message formatting and delivery.
+    """
     bot = MagicMock()
     bot.send_message = AsyncMock()
     with patch("sqlite3.connect") as mock_connect, \
@@ -42,6 +52,10 @@ async def test_notify_due_tasks():
 @pytest.mark.asyncio
 @patch('sqlite3.connect')
 async def test_notify_due_tasks_success(mock_connect):
+    """
+    Tests multiple notifications for due tasks, ensuring each task reminder is
+    sent correctly and verifies the call count matches expected tasks.
+    """
     bot = MagicMock()
     bot.send_message = AsyncMock()
     mock_cursor = MagicMock()
@@ -71,6 +85,10 @@ async def test_notify_due_tasks_success(mock_connect):
 
 @pytest.mark.asyncio
 async def test_notify_due_tasks_db_error():
+    """
+    Simulates a database error during the task notification process to test
+    the bot's error handling and logging capabilities.
+    """
     bot = MagicMock()
     bot.send_message = AsyncMock()
 
@@ -94,6 +112,10 @@ async def test_notify_due_tasks_db_error():
 
 @pytest.mark.asyncio
 async def test_notify_due_tasks_unexpected_error():
+    """
+    Tests the bot's response to unexpected errors during task notifications,
+    ensuring proper logging and error handling.
+    """
     bot = MagicMock()
     bot.send_message = AsyncMock()
 
@@ -111,6 +133,11 @@ async def test_notify_due_tasks_unexpected_error():
 
 
 def test_notification_triggered():
+    """
+    Tests the triggering of notifications based on the daily reminder time.
+    Ensures the notifier is triggered at the correct time and verifies that
+    the notification function is called as expected.
+    """
     now = datetime.now().strftime("%H:%M:%S")
 
     with patch('app.bot.DAILY_REMINDER_START', now), \

@@ -12,6 +12,11 @@ load_dotenv()
 
 
 class MockUpdate:
+    """
+    Mocks Telegram's Update object for testing. Simulates the structure and
+    behavior of the Telegram Bot API's Update object, including user and chat
+    identification and reply methods.
+    """
     def __init__(self, message_text, user_id, chat_id=1):
         self.message = MagicMock()
         self.message.text = message_text
@@ -24,6 +29,10 @@ class MockUpdate:
 
 @pytest.mark.asyncio
 async def test_mark_completed_success():
+    """
+    Tests successful marking of a task as completed. Verifies that the database
+    update command is executed and the user receives a success message.
+    """
     update = MockUpdate("/complete", user_id=12345)
     context = MagicMock()
     context.args = ["42"]
@@ -47,6 +56,10 @@ async def test_mark_completed_success():
 
 @pytest.mark.asyncio
 async def test_mark_completed_tasks_with_db_error():
+    """
+    Simulates a database error during the completion of a task to test error
+    handling and user notification about the database failure.
+    """
     update = MockUpdate("/complete", user_id=12345)
     context = MagicMock()
     context.args = ["42"]
@@ -74,6 +87,10 @@ async def test_mark_completed_tasks_with_db_error():
 
 @pytest.mark.asyncio
 async def test_mark_completed_tasks_unexpected_error():
+    """
+    Tests the mark_completed function's response to an unexpected error,
+    ensuring it logs the error and informs the user appropriately.
+    """
     update = MockUpdate("/complete", user_id=12345)
     context = MagicMock()
     context.args = ["42"]
@@ -94,6 +111,10 @@ async def test_mark_completed_tasks_unexpected_error():
 
 @pytest.mark.asyncio
 async def test_mark_completed_not_found():
+    """
+    Tests the scenario where the task to be marked as completed does not exist
+    or is already completed, verifying the correct user notification.
+    """
     update = MockUpdate("/complete", user_id=12345)
     context = MagicMock()
     context.args = ["100"]
@@ -113,6 +134,10 @@ async def test_mark_completed_not_found():
 
 @pytest.mark.asyncio
 async def test_mark_completed_db_error():
+    """
+    Tests handling of a database connection error in the function,
+    checking that the error is handled properly and the user is notified.
+    """
     update = MockUpdate("/complete", user_id=12345)
     context = MagicMock()
     context.args = ["42"]

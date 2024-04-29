@@ -12,6 +12,11 @@ load_dotenv()
 
 
 class MockUpdate:
+    """
+    Mocks Telegram's Update object for testing. Simulates the structure and
+    behavior of the Telegram Bot API's Update object, including user and chat
+    identification and reply methods.
+    """
     def __init__(self, message_text, user_id, chat_id=1):
         self.message = MagicMock()
         self.message.text = message_text
@@ -24,6 +29,11 @@ class MockUpdate:
 
 @pytest.mark.asyncio
 async def test_list_tasks_with_no_tasks():
+    """
+    Tests the list_tasks function to ensure it correctly handles the scenario
+    where no tasks are present in the database. This test verifies that
+    the appropriate message "No tasks found." is sent to the user.
+    """
     user_id = 12345
     update = MockUpdate("/list", user_id)
     context = MagicMock()
@@ -41,6 +51,11 @@ async def test_list_tasks_with_no_tasks():
 
 @pytest.mark.asyncio
 async def test_list_tasks_with_db_error():
+    """
+    Simulates a database error during the retrieval of tasks to test the bot's
+    error handling capabilities. This test ensures that the function logs the
+    error and informs user of a failure to list tasks due to a database error.
+    """
     update = MockUpdate("/list", user_id=12345)
     context = MagicMock()
 
@@ -67,6 +82,12 @@ async def test_list_tasks_with_db_error():
 
 @pytest.mark.asyncio
 async def test_list_tasks_unexpected_error():
+    """
+    Simulates an unexpected error to test how the list_tasks function handles
+    unexpected situations and communicates failure to the user. This test
+    verifies the bot's ability to log unexpected errors and provide a user
+    message that indicates a failure to list tasks.
+    """
     update = MockUpdate("/list", user_id=12345)
     context = MagicMock()
 
@@ -86,6 +107,12 @@ async def test_list_tasks_unexpected_error():
 
 @pytest.mark.asyncio
 async def test_list_tasks_with_multiple_tasks():
+    """
+    Tests the list_tasks function to ensure it correctly formats and sends a
+    message listing multiple tasks. This test checks the function's ability to
+    construct a detailed message including task details such as description,
+    category, completion status, and deadline, and then sends it correctly.
+    """
     user_id = 12345
     update = MockUpdate("/list", user_id)
     context = MagicMock()

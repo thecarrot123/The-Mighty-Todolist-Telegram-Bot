@@ -12,6 +12,11 @@ load_dotenv()
 
 
 class MockUpdate:
+    """
+    Mocks Telegram's Update object for testing. Simulates the structure and
+    behavior of the Telegram Bot API's Update object, including user and chat
+    identification and reply methods.
+    """
     def __init__(self, message_text, user_id, chat_id=1):
         self.message = MagicMock()
         self.message.text = message_text
@@ -24,6 +29,10 @@ class MockUpdate:
 
 @pytest.mark.asyncio
 async def test_delete_task_success():
+    """
+    Tests successful deletion of a task from the database. Verifies that the
+    correct SQL DELETE command is executed and confirms with a success message
+    """
     update = MockUpdate("/delete", user_id=12345)
     context = MagicMock()
     context.args = ["3"]
@@ -45,6 +54,11 @@ async def test_delete_task_success():
 
 @pytest.mark.asyncio
 async def test_delete_task_not_found():
+    """
+    Tests the delete_task function's handling when a specified task ID does
+    not exist. Ensures that it correctly informs the user that the task is
+    not found.
+    """
     update = MockUpdate("/delete", user_id=12345)
     context = MagicMock()
     context.args = ["99"]
@@ -63,6 +77,10 @@ async def test_delete_task_not_found():
 
 @pytest.mark.asyncio
 async def test_delete_tasks_with_db_error():
+    """
+    Simulates a database error during task deletion to test the bot's error
+    handling capabilities and logging of database errors.
+    """
     update = MockUpdate("/delete", user_id=12345)
     context = MagicMock()
     context.args = ["4"]
@@ -90,6 +108,10 @@ async def test_delete_tasks_with_db_error():
 
 @pytest.mark.asyncio
 async def test_delete_tasks_unexpected_error():
+    """
+    Simulates an unexpected error to test how the delete_task function handles
+    unexpected situations and communicates failure to the user.
+    """
     update = MockUpdate("/delete", user_id=12345)
     context = MagicMock()
     context.args = ["4"]

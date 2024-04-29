@@ -11,6 +11,11 @@ load_dotenv()
 
 
 class MockUpdate:
+    """
+    Mocks Telegram's Update object for testing. Simulates the structure and
+    behavior of the Telegram Bot API's Update object, including user and chat
+    identification and reply methods.
+    """
     def __init__(self, message_text, user_id, chat_id=1):
         self.message = MagicMock()
         self.message.text = message_text
@@ -23,14 +28,16 @@ class MockUpdate:
 
 @pytest.mark.asyncio
 async def test_start_command():
-    # Create a mock Update object with specific attributes
+    """
+    Tests the start_command function to ensure it sends the correct welcome
+    message when the bot is first interacted with by a user. Verifies the
+    appropriate response is triggered upon the '/start' command.
+    """
     update = MockUpdate("/start", user_id=12345)
-    context = MagicMock()  # Similarly mock the CallbackContext if needed
+    context = MagicMock()
 
-    # Correct usage without asyncio.run
     await start_command(update, context)
 
-    # Assert that reply_text was called with the expected welcome message
     update.message.reply_text.assert_called_with(
         "Welcome to The Mighty To-Do List Bot!"
     )
