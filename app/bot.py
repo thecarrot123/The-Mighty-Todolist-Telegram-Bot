@@ -144,7 +144,7 @@ async def add_task(update: Update, context: CallbackContext):
             name=str(task_id),
         )
 
-        await update.message.reply_text("Task added successfully!")
+        await update.message.reply_text(f"Task {task_id} added successfully!")
     except sqlite3.Error as e:
         logging.error(f"Database error: {e}")
         await update.message.reply_text(

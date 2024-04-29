@@ -44,12 +44,13 @@ async def test_add_task_valid_input():
     with patch("sqlite3.connect") as mock_connect:
         mock_cursor = MagicMock()
         mock_connect.return_value.cursor.return_value = mock_cursor
+        task_id = mock_cursor.lastrowid
 
         await add_task(update, context)
 
         mock_cursor.execute.assert_called()
         update.message.reply_text.assert_called_with(
-            "Task added successfully!"
+            f"Task {task_id} added successfully!"
         )
 
 
