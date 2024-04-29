@@ -20,6 +20,9 @@ pytest-asyncio = "^0.23.6"
 pytest-cov = "^5.0.0"
 radon = "^6.0.1"
 mutmut = "^2.4.5"
+google-api-python-client = "^2.127.0"
+google-auth-httplib2 = "^0.2.0"
+google-auth-oauthlib = "^1.2.0"
 
 
 [build-system]

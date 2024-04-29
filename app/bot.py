@@ -6,6 +6,8 @@ from datetime import datetime
 from threading import Event, Thread
 
 from dotenv import load_dotenv
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
 from telegram import Bot, Update
 from telegram.ext import Application, CallbackContext, CommandHandler
 
@@ -383,6 +385,41 @@ def run_notifiers():
         shutdown_event.wait(timeout=60)
 
 
+def sync_with_google_sheets():
+    # Google Sheets credentials and service setup
+    SERVICE_ACCOUNT_FILE = 'sheets_key.json'
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+    creds = Credentials.from_service_account_file(
+        SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    service = build('sheets', 'v4', credentials=creds)
+
+    SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
+    RANGE_NAME = 'Sheet1!A1'
+
+    # Connect to the SQLite database
+    conn = sqlite3.connect(DATABASE_URL)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tasks")
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Format the data for Google Sheets
+    values = [list(row) for row in rows]
+
+    # Update Google Sheet
+    body = {'values': values}
+    service.spreadsheets().values().update(
+        spreadsheetId=SPREADSHEET_ID,
+        range=RANGE_NAME,
+        valueInputOption='RAW',
+        body=body).execute()
+
+
+def run_sheets_sync():
+    while not shutdown_event.is_set():
+        sync_with_google_sheets()
+        shutdown_event.wait(timeout=600)
+
 # Main function
 
 
@@ -390,6 +427,7 @@ def main():
     """Run bot."""
     try:
         init_db()
+        sync_with_google_sheets()
         application = Application.builder().token(TOKEN).build()
 
         application.add_handler(CommandHandler("start", start_command))
@@ -402,6 +440,9 @@ def main():
         # Start the notifiers in a separate thread
         thread = Thread(target=run_notifiers)
         thread.start()
+
+        sheets_thread = Thread(target=run_sheets_sync)
+        sheets_thread.start()
 
         # Run the bot until the user presses Ctrl-C
         application.run_polling(allowed_updates=Update.ALL_TYPES)

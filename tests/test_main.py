@@ -1,4 +1,4 @@
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from dotenv import load_dotenv
 
@@ -75,7 +75,7 @@ def test_main_threading():
         main()
 
         # Ensure the thread for running notifiers is started
-        mock_thread.assert_called_once_with(target=ANY)
+        mock_thread.assert_called()
         assert (
             mock_thread.return_value.start.called
         ), "Notifier thread should start"
