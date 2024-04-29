@@ -43,7 +43,9 @@ def test_main_command_handler():
     """
     with patch("app.bot.init_db"), patch(
         "app.bot.Application.builder"
-    ) as mock_builder, patch("app.bot.CommandHandler") as mock_command_handler, patch(
+    ) as mock_builder, patch(
+        "app.bot.CommandHandler"
+    ) as mock_command_handler, patch(
         "app.bot.run_notifiers"
     ), patch(
         "app.bot.Thread"
@@ -79,12 +81,14 @@ def test_main_threading():
     thread for running notifiers is correctly initiated. Ensures the thread
     starts as expected, which is crucial for background tasks.
     """
-    with patch("app.bot.init_db"), patch("app.bot.Application.builder"), patch(
-        "app.bot.run_notifiers"
-    ), patch("app.bot.Thread") as mock_thread, patch("app.bot.sync_with_google_sheets"):
+    with patch("app.bot.init_db"), patch("app.bot.Application.builder"), \
+         patch("app.bot.run_notifiers"), \
+         patch("app.bot.Thread") as mock_thread, \
+         patch("app.bot.sync_with_google_sheets"):
 
         main()
 
         # Ensure the thread for running notifiers is started
         mock_thread.assert_called()
-        assert mock_thread.return_value.start.called, "Notifier thread should start"
+        assert mock_thread.return_value.start.called, \
+            "Notifier thread should start"
