@@ -23,3 +23,5 @@ jobs:
         run: poetry run flake8 app tests --max-complexity 8
       - name: Check security issues
         run: poetry run bandit -r app/
+      - name: Run mutation tests
+        run: poetry run mutmut run --paths-to-mutate app
